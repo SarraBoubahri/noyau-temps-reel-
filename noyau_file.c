@@ -10,90 +10,96 @@
 
 // recuperation du bon fichier selon l'architecture pour la fonction printf
 #include "io/serialio.h"
+#include <stdio.h>
+#include <assert.h>
+
 
 /*----------------------------------------------------------------------------*
  * variables communes a toutes les procedures                                 *
  *----------------------------------------------------------------------------*/
 
-/*
- * tableau qui stocke les taches
- * indice = numero de tache
- * valeur = tache suivante
- */
 static uint16_t _file[MAX_TACHES];
-
-/*
- * index de queue
- * valeur de l'index de la tache en cours d'execution
- * pointe sur la prochaine tache a activer
- */
 static uint16_t _queue;
 
 /*----------------------------------------------------------------------------*
  * fonctions de gestion de la file                                            *
  *----------------------------------------------------------------------------*/
 
-/*
- * initialise la file
- * entre  : sans
- * sortie : sans
- * description : la queue est initialisee à une valeur de tache impossible
- */
 void file_init(void) {
-    _queue =
+    _queue = F_VIDE;
 }
 
-/*
- * ajoute une tache dans la file
- * entre  : n numero de la tache a ajouter
- * sortie : sans
- * description : ajoute la tache n en fin de file
- */
 void file_ajoute(uint16_t n) {
-    
+    uint16_t courant;
+
+    if (_queue == F_VIDE) {
+        _queue = n;
+        _file[n] = n;
+        return;
+    }
+
+    courant = _queue;
+
+    while (_file[courant] != _queue) {
+        courant = _file[courant];
+    }
+
+    _file[courant] = n;
+    _file[n] = _queue;
 }
 
-/*
- * retire une tache de la file
- * entre  : t numero de la tache a retirer
- * sortie : sans
- * description : retire la tache t de la file. L'ordre de la file n'est pas
-                 modifie
- */
 void file_retire(uint16_t t) {
-    
+    uint16_t courant, precedent;
+
+    if (_queue == F_VIDE) {
+        return;
+    }
+
+    if (_queue == t && _file[_queue] == _queue) {
+        _queue = F_VIDE;
+        return;
+    }
+
+    courant = _queue;
+    precedent = _queue;
+
+    while (_file[courant] != t && _file[courant] != _queue) {
+        courant = _file[courant];
+    }
+
+    if (_file[courant] != t) {
+        return;
+    }
+
+    precedent = courant;
+
+    if (t == _queue) {
+        _queue = _file[t];
+    }
+
+    _file[precedent] = _file[t];
 }
 
-/*
- * recherche la tache suivante a executer
- * entre  : sans
- * sortie : numero de la tache a activer
- * description : queue pointe sur la tache suivante
- */
 uint16_t file_suivant(void) {
-    
+    uint16_t t;
+
+    if (_queue == F_VIDE) {
+        return F_VIDE;
+    }
+
+    t = _queue;
+    _queue = _file[_queue];
+    return t;
 }
 
-/*
- * affiche la queue, donc la derniere tache
- * entre  : sans
- * sortie : sans
- * description : affiche la valeur de queue
- */
 void file_affiche_queue() {
     printf("_queue = %d\n", _queue);
 }
 
-/*
- * affiche la file
- * entre  : sans
- * sortie : sans
- * description : affiche les valeurs de la file
- */
 void file_affiche() {
     int i;
 
-    printf("Tache   | ");
+    printf("Tache | ");
     for (i = 0; i < MAX_TACHES; i++) {
         printf("%03d | ", i);
     }
@@ -104,3 +110,108 @@ void file_affiche() {
     }
     printf("\n");
 }
+
+/*
+                                     TEST
+ */
+
+void test_file_init() {
+    file_init();
+    printf("test_file_init OK\n");
+}
+
+void test_file_ajoute() {
+    file_init();
+
+    file_ajoute(1);
+
+
+    file_ajoute(2);
+
+
+    printf("test_file_ajoute OK\n");
+}
+
+void test_file_suivant() {
+    file_init();
+
+    file_ajoute(1);
+    file_ajoute(2);
+    file_ajoute(3);
+
+    int t = file_suivant();
+
+
+    t = file_suivant();
+
+
+    t = file_suivant();
+
+
+    printf("test_file_suivant OK\n");
+}
+
+void test_file_retire() {
+    file_init();
+
+    file_ajoute(1);
+    file_ajoute(2);
+    file_ajoute(3);
+
+    file_retire(2);
+
+
+
+    printf("test_file_retire OK\n");
+}
+
+int main() {
+
+    printf("===== TEST FILE =====\n");
+
+    // TEST 1 : initialisation
+    file_init();
+    file_affiche_queue();
+
+    // TEST 2 : ajout
+    printf("\n--- Ajout ---\n");
+    file_ajoute(1);
+    file_affiche();
+
+    file_ajoute(2);
+    file_affiche();
+
+    file_ajoute(3);
+    file_affiche();
+
+    // TEST 3 : suivant
+    printf("\n--- Suivant ---\n");
+    printf("Suivant: %d\n", file_suivant());
+    file_affiche_queue();
+
+    printf("Suivant: %d\n", file_suivant());
+    file_affiche_queue();
+
+    printf("Suivant: %d\n", file_suivant());
+    file_affiche_queue();
+
+    // TEST 4 : retrait
+    printf("\n--- Retire ---\n");
+    file_retire(2);
+    file_affiche();
+
+    file_retire(1);
+    file_affiche();
+
+    file_retire(3);
+    file_affiche();
+
+    // TEST 5 : cas limite (file vide)
+    printf("\n--- File vide ---\n");
+    printf("Suivant: %d\n", file_suivant());
+
+    printf("\n===== FIN TEST =====\n");
+
+    return 0;
+}
+
